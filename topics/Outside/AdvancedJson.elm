@@ -169,69 +169,57 @@ main =
 
 
 type alias Model =
-    { coolPeople : List String
+    { luke : Maybe Person
     }
 
 
 init =
-    ( { coolPeople = [] }, Cmd.none )
+    ( { luke = Nothing }, Cmd.none )
 
 
 type Msg
-    = FindCoolPeople
-    | FoundCoolPeople (List String)
+    = FetchLuke
+    | GotLuke Person
     | RequestError
 
 
 view model =
     div [ center ]
-        [ h1 [] [ text "Cool People" ]
-        , ul [] (List.map (\person -> li [] [ text person ]) model.coolPeople)
+        [ h1 [] [ text "LUKE SKYWALKER?" ]
         , div []
-            [ button [ onClick FindCoolPeople ] [ text "Find Cool People" ] ]
+            [ button [ onClick FetchLuke ] [ text "Fetch Luke" ] ]
         ]
 
 
 update msg model =
     case msg of
-        FindCoolPeople ->
-            ( model, getCoolPeople )
+        FetchLuke ->
+            ( model, getLuke )
 
-        FoundCoolPeople people ->
-            ( { model | coolPeople = people }, Cmd.none )
+        GotLuke luke ->
+            -- TODO: FILL ME OUT
+            ( model, Cmd.none )
 
-        _ ->
+        RequestError ->
             -- ALERT ALERT NEVER DO THIS I'M JUST BEING LAZY
             ( model, Cmd.none )
 
 
-getCoolPeople : Cmd Msg
-getCoolPeople =
-    -- live code
-    let
-        task =
-            coolPeopleTask
-    in
-        Task.perform (always RequestError) FoundCoolPeople task
+lukeUrl : String
+lukeUrl = "http://swapi.co/api/people/1/"
 
-
-
-{-
-   By giving Http.get a decoder instead of a string, we get back a Task err value. So if the request fails, or the decoding fails, we still get back an `Http.Error`.
-
-   But if the request succeeds, we get a task for the decoded value, which is how we usually want to work with it in our program.
-
--}
-
-
-coolPeopleTask : Task Http.Error (List String)
-coolPeopleTask =
-    Http.get (list string) "https://is-it-christmas-api-bjpuutprrl.now.sh/cool-people"
+fetchLuke : Cmd Msg
+fetchLuke =
+  -- TODO: FILL ME OUT
+  Debug.crash "..."
 --}
 
 
 
 -- EXERCISE: add a button to fetch, decode, and render Luke Skywalker from the API. "http://swapi.co/api/people/1/" You should be able to re-use your person decoder.
+
+-- ASIDE: Talk about how you would do more detailed error handling
+
 {-
    LEARN: Decodeing union types.
 
@@ -403,12 +391,12 @@ postHighScore url aHighScore =
 
 
 
--- EXERCISE: add a button to the Elm Architecture app that posts Luke Skywalker to http://httpbin.org/. It is ok if you just use the hard-coded result.
+-- EXERCISE: add a button to the Elm Architecture app that posts Luke Skywalker you fetched from the star wars api to http://httpbin.org/
 
 
 {-
 
 * Show http://noredink.github.io/json-to-elm/ for auto-generating encoders and decoders
-* Show posting JSON content-types with Http.send (ugh this is a giant mess)
+* Show posting JSON content-types with Http.send (WHICH IS A GIANT MESS)
 * Show https://github.com/lukewestby/elm-http-builder as an alternative to Http.send
 -}
