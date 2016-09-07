@@ -114,23 +114,22 @@ update msg model =
    The good news is that Elm has answers to both of these problems for us, and it looks a lot like what we've done so far. Let me show you some code, and I'll talk through it as I go.
 
 -}
-
 {--}
 
 
 type alias Model =
-    { number : Int
+    { number : ( Int, Int )
     }
 
 
 init : ( Model, Cmd Msg )
 init =
-    ( { number = 0 }, Cmd.none )
+    ( { number = ( 0, 0 ) }, Cmd.none )
 
 
 type Msg
     = Roll
-    | NewNumber Int
+    | NewNumber ( Int, Int )
 
 
 view : Model -> Html Msg
@@ -138,23 +137,29 @@ view model =
     div [ center ]
         [ h1 [] [ text "Ye Olde Random Number Generator" ]
         , div [] [ button [ onClick Roll ] [ text "Make It So" ] ]
-        , div [] [ text ("The number is " ++ (toString model.number)) ]
+        , div [] [ text ("The number is " ++ (toString (fst model.number)) ++ " and " ++ (toString (snd model.number))) ]
         ]
 
 
-update : Msg -> Model -> (Model, Cmd Msg)
+update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     case msg of
         Roll ->
-            ( model, getRandomNumber )
+            ( model, getTwoRandomNumbers )
 
         NewNumber n ->
             ( { model | number = n }, Cmd.none )
 
 
-getRandomNumber : Cmd Msg
-getRandomNumber =
-    Random.generate NewNumber (Random.int Random.minInt Random.maxInt)
+
+-- getRandomNumber : Cmd Msg
+-- getRandomNumber =
+--     Random.generate NewNumber (Random.int Random.minInt Random.maxInt)
+
+
+getTwoRandomNumbers : Cmd Msg
+getTwoRandomNumbers =
+    Random.generate NewNumber (Random.pair (Random.int Random.minInt Random.maxInt) (Random.int Random.minInt Random.maxInt))
 
 
 
@@ -170,32 +175,32 @@ main =
 --}
 
 
+
 {-
-EXERCISE: Modify this example to return two random numbers instead of just one
+   EXERCISE: Modify this example to return two random numbers instead of just one
 
-The basic pattern is, you build your app out of pure functions that are easy to test and re-use, and you push all the side-effects to the edges of your program, where Elm can handle them for you.
+   The basic pattern is, you build your app out of pure functions that are easy to test and re-use, and you push all the side-effects to the edges of your program, where Elm can handle them for you.
 
-The new diagram for the architecture looks like this:
+   The new diagram for the architecture looks like this:
 
-     +---------+
-     |         |
-     |  Elm    |
-     |         |
-     |         |
-     +-+----+--+
-       ^    |
-       |    |
-Cmd Msg|    | Msg
-       |    |
-       |    |
-       |    |
-       |    ^
-      ++----+----+          Model                 +-----------+
-      |          +------------------------------> |           |
-      |  Update  |          Msg, Model            |    View   |
-      |          +^-------------------------------+           |
-      +----------+                                +-----------+
+        +---------+
+        |         |
+        |  Elm    |
+        |         |
+        |         |
+        +-+----+--+
+          ^    |
+          |    |
+   Cmd Msg|    | Msg
+          |    |
+          |    |
+          |    |
+          |    ^
+         ++----+----+          Model                 +-----------+
+         |          +------------------------------> |           |
+         |  Update  |          Msg, Model            |    View   |
+         |          +^-------------------------------+           |
+         +----------+                                +-----------+
 
 
 -}
-

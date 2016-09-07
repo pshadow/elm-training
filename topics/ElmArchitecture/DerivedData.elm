@@ -1,9 +1,9 @@
 module ElmArchitecture.DerivedData exposing (..)
 
-import Html exposing (div, input, text, Html)
+import Html exposing (div, input, text, button, Html)
 import Html.Attributes exposing (type')
 import Html.App exposing (beginnerProgram)
-import Html.Events exposing (onInput)
+import Html.Events exposing (onInput, onClick)
 import String
 
 
@@ -69,16 +69,18 @@ main =
 
 type alias Model =
     { text : String
+    , isClicked : Bool
     }
 
 
 model : Model
 model =
-    { text = "" }
+    { text = "", isClicked = False }
 
 
 type Msg
     = SetText String
+    | SetClicked
 
 
 view : Model -> Html Msg
@@ -90,11 +92,18 @@ view model =
             , onInput SetText
             ]
             []
-        , (if not <| isValid model.text then
+        , (if
+            model.isClicked
+                && (not <| isValid model.text)
+           then
             renderError
            else
             text ""
           )
+        , button
+            [ onClick SetClicked
+            ]
+            [ text "save" ]
         ]
 
 
@@ -112,7 +121,10 @@ update : Msg -> Model -> Model
 update msg model =
     case msg of
         SetText str ->
-            { model | text = str }
+            { model | text = str, isClicked = False }
+
+        SetClicked ->
+            { model | isClicked = True }
 
 
 main =

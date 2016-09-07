@@ -81,6 +81,7 @@ gotKill stats =
     -- live code: increment kills
     { stats | kills = stats.kills + 1 }
 
+
 died : PlayerStats -> PlayerStats
 died stats =
     -- live code: increment deaths
@@ -115,10 +116,30 @@ collectedGold n stats =
    Print out the GameResult for Tron.
 
 -}
+-- GameResult : PlayerStats -> Bool
 
 
 type alias GameResult =
-    {}
+    { score : Int
+    , isWon : Bool
+    }
+
+
+tronsPlayerState : PlayerStats -> PlayerStats
+tronsPlayerState playerStats =
+    gotKill playerStats
+        |> collectedGold 200
+        |> died
+        |> gotKill
+        |> gotKill
+        |> collectedGold 200
+        |> died
+        |> collectedGold 200
+
+
+gameResult : PlayerStats -> GameResult
+gameResult playerStats =
+    { score = calculateScore playerStats, isWon = (playerStats.gold > 1000) }
 
 
 result : PlayerStats -> GameResult
@@ -127,4 +148,13 @@ result stats =
 
 
 main =
-    text "Use elm-repl to test"
+    text
+        (toString
+            (tronsPlayerState
+                { player = ""
+                , kills = 0
+                , deaths = 0
+                , gold = 0
+                }
+            )
+        )

@@ -101,12 +101,24 @@ count list =
 
 
 mySkateboards : ( List Skateboard, List Skateboard ) -> Html a
-mySkateboards _ =
-    Debug.crash "..."
+mySkateboards ( skateboardsOne, skateboardsTwo ) =
+    case skateboardsOne of
+        n :: rest ->
+            showSkateboard n
+
+        _ ->
+            case skateboardsTwo of
+                n :: rest ->
+                    showSkateboard n
+
+                _ ->
+                    div [] []
 
 
+
+-- mySkateboards _ =
+--     Debug.crash "..."
 -- For more on destructuring specifically, check out https://gist.github.com/yang-wei/4f563fbf81ff843e8b1e.
-
 {-
       LEARN: reading type signatures both to tell what the args and return types are
 
@@ -130,5 +142,7 @@ mySkateboards _ =
 people =
     [ "Jamsion", "Sean", "Jessica", "Aimee", "Jordan", "Sarah", "Jared" ]
 
+
 hasSarah : List String -> Bool
-hasSarah people = Debug.crash "please implement me"
+hasSarah people =
+    Debug.crash "please implement me"

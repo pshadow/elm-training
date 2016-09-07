@@ -21,31 +21,48 @@ import Html.Attributes exposing (src, href, width)
 -}
 
 
+appState : List Cat
 appState =
     -- this is my application state, give it to a view
-    { catOne =
-        { url = "http://www.bbc.com/news/world-europe-34897645"
-        , image = "http://ichef.bbci.co.uk/news/1024/cpsprodpb/15664/production/_86825678_cats9.png"
-        }
-    , catTwo =
-        { url = "http://www.rd.com/advice/pets/how-to-decode-your-cats-behavior/"
-        , image = "http://www.rd.com/wp-content/uploads/sites/2/2016/04/01-cat-wants-to-tell-you-laptop.jpg"
-        }
+    [ { url = "http://www.bbc.com/news/world-europe-34897645"
+      , image = "http://ichef.bbci.co.uk/news/1024/cpsprodpb/15664/production/_86825678_cats9.png"
+      , title = "Cat One"
+      }
+    , { url = "http://www.rd.com/advice/pets/how-to-decode-your-cats-behavior/"
+      , image = "http://www.rd.com/wp-content/uploads/sites/2/2016/04/01-cat-wants-to-tell-you-laptop.jpg"
+      , title = "Cat Two"
+      }
+    ]
+
+
+
+-- this is my application state, give it to a view
+
+
+type alias Cat =
+    { url : String
+    , image : String
+    , title : String
     }
 
 
 view state =
     -- live code: display both cats
-    div []
-        [ catView state.catOne
-        , catView state.catTwo
-        ]
+    div [] (List.map catView state)
+
+
+
+-- [ catView state.catOne
+-- , catView state.catTwo
+-- ]
 
 
 catView cat =
     -- live code: display one cat
     div []
-        [ imageLink cat.image cat.url ]
+        [ imageLink cat.image cat.url
+        , div [] [ text cat.title ]
+        ]
 
 
 imageLink image url =

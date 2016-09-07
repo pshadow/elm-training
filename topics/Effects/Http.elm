@@ -1,11 +1,12 @@
 module Effects.Http exposing (..)
 
-import Html exposing (div, h1, h2, text, button, Html)
+import Html exposing (div, h1, h2, text, button, Html, input)
 import Html.App exposing (program)
-import Html.Events exposing (onClick)
+import Html.Events exposing (onClick, onInput)
 import Http
 import Task exposing (Task)
 import DetailedRendering.InlineStyles exposing (center)
+import Json.Decode
 
 
 {--
@@ -15,7 +16,6 @@ We follow the same pattern we did with Random. We create data structures that te
 
 Here is a tiny example.
 --}
-
 {--
 
 main = program { init = init, view = view, update = update, subscriptions = subscriptions }
@@ -71,66 +71,87 @@ checkChristmasStatus =
 
 --}
 {-
-So far this looks similar to the Random example. We have a Msg type that models two interactions: generating the Cmd and grabbing its results. We have the basic Elm Effects loop, where a user action comes in, out `update` function creates a Cmd, elm runs the Cmd, and it gets fed back to the update function as a Msg.
+   So far this looks similar to the Random example. We have a Msg type that models two interactions: generating the Cmd and grabbing its results. We have the basic Elm Effects loop, where a user action comes in, out `update` function creates a Cmd, elm runs the Cmd, and it gets fed back to the update function as a Msg.
 
-The only new thing here is how exactly we generate the Cmd Msg.
+   The only new thing here is how exactly we generate the Cmd Msg.
 
-The function we want to use looks like [this](http://package.elm-lang.org/packages/evancz/elm-http/3.0.1/Http#getString):
+   The function we want to use looks like [this](http://package.elm-lang.org/packages/evancz/elm-http/3.0.1/Http#getString):
 
 -}
+
+
 getString : String -> Task Error String
-getString _ = Debug.crash "welp"
+getString _ =
+    Debug.crash "welp"
+
+
 
 {-
-and `Error` looks like this:
+   and `Error` looks like this:
 
 -}
+
+
 type Error
     = Timeout
     | NetworkError
     | UnexpectedPayload String
     | BadResponse Int String
 
+
+
 {-
 
-So when we call `getString`, we get back a `Task`, which reprepsents an operation that can succeed or fail. If it fails, it gives us back an Error, and if it succeeds it gives us back the result as a String.
+   So when we call `getString`, we get back a `Task`, which reprepsents an operation that can succeed or fail. If it fails, it gives us back an Error, and if it succeeds it gives us back the result as a String.
 
-Our job now is to turn that `Task` in to a `Cmd Msg`, which we do with `Task.perform`.
+   Our job now is to turn that `Task` in to a `Cmd Msg`, which we do with `Task.perform`.
 
-Here is what `Task.perform` looks like.
+   Here is what `Task.perform` looks like.
 -}
+
 
 perform : (x -> msg) -> (a -> msg) -> Task x a -> Cmd msg
-perform _ _ _ = Debug.crash "..."
+perform _ _ _ =
+    Debug.crash "..."
+
+
 
 {-
-The type signature tells us perform takes a function from x to msg, a function from a to msg, and a task x a, and returns a cmd.
+   The type signature tells us perform takes a function from x to msg, a function from a to msg, and a task x a, and returns a cmd.
 
-This is basically transforming the failure and success paths of the Task to a msg, so that no matter what happens when we hand the Cmd to elm, it always gives back a msg that can go in to our update function.
+   This is basically transforming the failure and success paths of the Task to a msg, so that no matter what happens when we hand the Cmd to elm, it always gives back a msg that can go in to our update function.
 
 
-DEMO: Change `update`, `model`, and `view` to handle the RequestError
+   DEMO: Change `update`, `model`, and `view` to handle the RequestError
 -}
 
-{--}
 
-main = program { init = init, view = view, update = update, subscriptions = subscriptions }
+{--}
+main =
+    program { init = init, view = view, update = update, subscriptions = subscriptions }
 
 
 type alias Model =
-    { isItChristmas : Maybe String,
-      error: Maybe String
+    { isItChristmas : Maybe String
+    , error : Maybe String
+    , isLoading : Bool
+    , textField : String
+    , coolPeopleResult : Maybe (List String)
     }
 
-type Msg =
-    CheckChristmas
+
+type Msg
+    = CheckChristmas
     | IsItChristmas String
     | RequestError
+    | CheckCoolPeople
+    | CoolPeopleResult (List String)
+    | UpdateTextField String
 
 
 init : ( Model, Cmd Msg )
 init =
-    ( { isItChristmas = Nothing, error = Nothing }, Cmd.none )
+    ( { isItChristmas = Nothing, error = Nothing, isLoading = False, textField = "", coolPeopleResult = Nothing }, Cmd.none )
 
 
 view : Model -> Html Msg
@@ -141,7 +162,10 @@ view model =
             [ text
                 (case model.isItChristmas of
                     Nothing ->
-                        "WHO CAN SAY"
+                        if model.isLoading then
+                            "Loading"
+                        else
+                            "WHO CAN SAY"
 
                     Just str ->
                         str
@@ -149,30 +173,67 @@ view model =
             ]
         , div [] [ button [ onClick CheckChristmas ] [ text "Let's Find Out" ] ]
         , div [] [ text (Maybe.withDefault "" model.error) ]
+        , div [] [ input [ onInput UpdateTextField ] [] ]
+        , h2 []
+            [ text
+                (case model.coolPeopleResult of
+                    Nothing ->
+                        if model.isLoading then
+                            "Loading cool people"
+                        else
+                            "Error"
+
+                    Just strs ->
+                        (List.foldl (++) "" strs)
+                )
+            ]
+        , div [] [ button [ onClick CheckCoolPeople ] [ text "Post Cool People" ] ]
         ]
 
-update : Msg -> Model -> (Model, Cmd Msg)
+
+update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
-  case msg of
-    CheckChristmas ->
-      (model, checkChristmasStatus)
-    IsItChristmas str ->
-      ( { model | isItChristmas = Just str, error = Nothing }, Cmd.none )
-    RequestError ->
-      ( { model | isItChristmas = Nothing, error = Just "OH NO AN ERROR" }, Cmd.none )
+    case msg of
+        CheckChristmas ->
+            ( { model | isLoading = True }, checkChristmasStatus )
+
+        IsItChristmas str ->
+            ( { model | isItChristmas = Just str, error = Nothing, isLoading = False }, Cmd.none )
+
+        RequestError ->
+            ( { model | isItChristmas = Nothing, error = Just "OH NO AN ERROR", isLoading = False }, Cmd.none )
+
+        CheckCoolPeople ->
+            ( { model | isLoading = True, coolPeopleResult = Nothing }, postCoolPeople model.textField )
+
+        CoolPeopleResult strs ->
+            ( { model | error = Nothing, isLoading = False, coolPeopleResult = Just strs }, Cmd.none )
+
+        UpdateTextField str ->
+            ( { model | textField = str, isLoading = False }, Cmd.none )
 
 
-subscriptions _ = Sub.none
+subscriptions _ =
+    Sub.none
 
 
 checkChristmasStatus : Cmd Msg
 checkChristmasStatus =
-  Task.perform (always RequestError) IsItChristmas <| Http.getString "https://is-it-christmas-api-bjpuutprrl.now.sh/is-it-christmas"
-
+    Task.perform (always RequestError) IsItChristmas <| Http.getString "https://is-it-christmas-api-bjpuutprrl.now.sh/is-it-christmas"
 --}
 
+
+postCoolPeople : String -> Cmd Msg
+postCoolPeople textFieldData =
+    Task.perform (always RequestError)
+        CoolPeopleResult
+        (Http.post (Json.Decode.list Json.Decode.string)
+            "https://is-it-christmas-api-bjpuutprrl.now.sh/cool-people"
+            (Http.string textFieldData)
+        )
+
+
+
 -- EXERCISE: show a loading message when they make the request but it hasn't completed yet.
-
 -- EXCERCISE : Add another button and a text field to post strings to "https://is-it-christmas-api-bjpuutprrl.now.sh/cool-people" and then get the cool people back
-
 -- https://is-it-christmas-api-bjpuutprrl.now.sh for the demo api

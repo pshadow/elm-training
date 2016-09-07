@@ -18,9 +18,11 @@ import Html.App as App
 import Svg exposing (..)
 import Svg.Attributes exposing (..)
 import Time exposing (Time, second)
+import Task
+import Http
 
 
-
+main : Program Never
 main =
   App.program
     { init = init
@@ -32,32 +34,56 @@ main =
 
 -- MODEL
 
-type alias Model = Time
+type alias Model =
+    { time: Time
+    , isItChristmas : Maybe String
+    , error : Maybe String
+    , isLoading : Bool
+    }
 
 
 init : (Model, Cmd Msg)
 init =
-  (0, Cmd.none)
+  ({ time = 0, isItChristmas = Nothing, error = Nothing, isLoading = False}, Cmd.none)
 
 
 -- UPDATE
 
 type Msg
   = Tick Time
+  | CheckChristmas
+  | IsItChristmas String
+  | RequestError
 
 
 update : Msg -> Model -> (Model, Cmd Msg)
 update msg model =
   case msg of
     Tick newTime ->
-      (newTime, Cmd.none)
+        ( { model | time = newTime }, Cmd.none)
+
+    CheckChristmas ->
+        ( { model | isLoading = True }, checkChristmasStatus)
+
+    IsItChristmas str ->
+        ( { model | isItChristmas = Just str, error = Nothing, isLoading = False }, Cmd.none )
+
+    RequestError ->
+        ( { model | isItChristmas = Nothing, error = Just "OH NO AN ERROR", isLoading = False }, Cmd.none )
+
+checkChristmasStatus : Cmd Msg
+checkChristmasStatus =
+    Task.perform (always RequestError) IsItChristmas <| Http.getString "https://is-it-christmas-api-bjpuutprrl.now.sh/is-it-christmas"
 
 
 -- SUBSCRIPTIONS
 
 subscriptions : Model -> Sub Msg
 subscriptions model =
-  Time.every second Tick
+    Sub.batch [
+     Time.every second Tick
+    ,Time.every (10 * second) (always CheckChristmas)
+    ]
 
 
 -- VIEW
@@ -66,7 +92,7 @@ view : Model -> Html Msg
 view model =
   let
     angle =
-      turns (Time.inMinutes model)
+      turns (Time.inMinutes model.time)
 
     handX =
       toString (50 + 40 * cos angle)
@@ -74,10 +100,23 @@ view model =
     handY =
       toString (50 + 40 * sin angle)
   in
-    svg [ viewBox "0 0 100 100", width "300px" ]
-      [ circle [ cx "50", cy "50", r "45", fill "#0B79CE" ] []
-      , line [ x1 "50", y1 "50", x2 handX, y2 handY, stroke "#023963" ] []
-      ]
+    Html.div [] [
+        svg [ viewBox "0 0 100 100", width "300px" ]
+          [ circle [ cx "50", cy "50", r "45", fill "#0B79CE" ] []
+          , line [ x1 "50", y1 "50", x2 handX, y2 handY, stroke "#023963" ] []
+          ]
+    , Html.div [] [ text
+        (case  model.isItChristmas of
+            Nothing ->
+                if model.isLoading then
+                    "Loading"
+                else
+                    "WHO CAN SAY"
+
+            Just str ->
+                str
+        )]
+    ]
 
 -- Show: multiple subscriptions
 -- Explain: using the Model to change your subscriptions
