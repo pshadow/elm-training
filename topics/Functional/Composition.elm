@@ -1,5 +1,8 @@
 module Functional.Composition exposing (..)
 
+import String exposing (length)
+
+
 {-
    LEARN: Composition
    combine small, useful functions to solve a larger problems
@@ -93,6 +96,7 @@ duplicateAll_Compose =
     List.concat << List.map duplicate
 
 
+
 {-
    LEARN: Pipe operators are used more often than (<<)
 
@@ -114,6 +118,7 @@ duplicateAll_Pipe' ns =
     List.concat <| List.map duplicate ns
 
 
+
 {-
    EXERCISE
      write repeatAll, which is the same as duplicate, but n times instead of 2
@@ -126,12 +131,15 @@ duplicateAll_Pipe' ns =
 
 repeat : Int -> a -> List a
 repeat n x =
-    Debug.crash "TODO"
+    List.repeat n x
 
 
 repeatAll : Int -> List a -> List a
 repeatAll n xs =
-    Debug.crash "TODO"
+    List.map (\x -> repeat n x) xs
+        |> List.concat
+
+
 
 {-
    EXERCISE
@@ -140,9 +148,16 @@ repeatAll n xs =
 
 -}
 
+
 maximum : List Int -> Int
 maximum ns =
-    Debug.crash "TODO"
+    case (List.maximum ns) of
+        Nothing ->
+            0
+
+        Just n ->
+            n
+
 
 
 {-
@@ -152,6 +167,19 @@ maximum ns =
 
 -}
 
+
 longestLength : List String -> Int
 longestLength ns =
-    Debug.crash "TODO"
+    let
+        getLength : List String -> List Int
+        getLength ns =
+            List.map (\n -> String.length n) ns
+
+        getMax : Int -> Int -> Int
+        getMax currMax newInt =
+            if currMax > newInt then
+                currMax
+            else
+                newInt
+    in
+        List.foldl getMax 0 (getLength ns)

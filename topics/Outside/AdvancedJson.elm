@@ -1,6 +1,6 @@
 module Outside.AdvancedJson exposing (..)
 
-import Json.Decode exposing (decodeString, succeed, string, (:=), Decoder, maybe, oneOf, list, float, int)
+import Json.Decode exposing (decodeString, succeed, string, (:=), Decoder, maybe, oneOf, list, float, int, object1)
 import Json.Decode.Extra exposing ((|:))
 import Json.Encode as Encode
 import Html exposing (div, h1, h2, text, button, ul, li, Html)
@@ -46,7 +46,7 @@ type alias Person =
     , skinColor : String
     , eyeColor : String
     , birthYear : String
-    , gender : String
+    , gender : Gender
     }
 
 
@@ -65,7 +65,7 @@ person =
         |: ("skin_color" := string)
         |: ("eye_color" := string)
         |: ("birth_year" := string)
-        |: ("gender" := string)
+        |: ("gender" := (Json.Decode.map parseGender string))
 
 
 decodedPerson =
@@ -98,7 +98,7 @@ person2 =
     -- live code
     succeed Person2
         |: (maybe ("eye_color" := string))
-        |: ("skin_color" := string)
+        |: (oneOf ([ ("skin_color" := string), succeed "no skin color" ]))
 
 
 decodedLuke =
@@ -170,56 +170,72 @@ main =
 
 type alias Model =
     { luke : Maybe Person
+    , response : Maybe Person
     }
 
 
 init =
-    ( { luke = Nothing }, Cmd.none )
+    ( { luke = Nothing, response = Nothing }, Cmd.none )
 
 
 type Msg
     = FetchLuke
     | GotLuke Person
     | RequestError
+    | PostLuke
+    | ParseLukeToView Person
 
 
 view model =
     div [ center ]
         [ h1 [] [ text "LUKE SKYWALKER?" ]
+        , h2 [] [ text (toString model.luke) ]
         , div []
             [ button [ onClick FetchLuke ] [ text "Fetch Luke" ] ]
+        , div []
+            [ button [ onClick PostLuke ] [ text "Post Luke" ] ]
+        , h2 [] [ text (toString model.response) ]
         ]
 
 
 update msg model =
     case msg of
         FetchLuke ->
-            ( model, getLuke )
+            ( model, fetchLuke )
 
         GotLuke luke ->
-            -- TODO: FILL ME OUT
-            ( model, Cmd.none )
+            ( { model | luke = Just luke }
+            , Cmd.none
+            )
 
         RequestError ->
             -- ALERT ALERT NEVER DO THIS I'M JUST BEING LAZY
             ( model, Cmd.none )
 
+        PostLuke ->
+            ( model, doPostLuke model )
+
+        ParseLukeToView person ->
+            ( { model | response = Just person }
+            , Cmd.none
+            )
+
 
 lukeUrl : String
-lukeUrl = "http://swapi.co/api/people/1/"
+lukeUrl =
+    "http://swapi.co/api/people/1/"
+
 
 fetchLuke : Cmd Msg
 fetchLuke =
-  -- TODO: FILL ME OUT
-  Debug.crash "..."
+    Task.perform (always RequestError) GotLuke <|
+        Http.get person lukeUrl
 --}
 
 
 
 -- EXERCISE: add a button to fetch, decode, and render Luke Skywalker from the API. "http://swapi.co/api/people/1/" You should be able to re-use your person decoder.
-
 -- ASIDE: Talk about how you would do more detailed error handling
-
 {-
    LEARN: Decodeing union types.
 
@@ -284,6 +300,25 @@ person4 =
         |: ("favorite_band" := (Json.Decode.map parseBand string))
 
 
+type Gender
+    = Male
+    | Female
+    | Other
+
+
+parseGender : String -> Gender
+parseGender gender =
+    case gender of
+        "Male" ->
+            Male
+
+        "Female" ->
+            Female
+
+        _ ->
+            Other
+
+
 
 -- EXERCISE: Create a union type for gender and add it to the `Person` type and `person` decoder.
 {-
@@ -294,14 +329,10 @@ person4 =
    Look at the function signature for Http.post: http://package.elm-lang.org/packages/evancz/elm-http/latest/Http#post
 
 -}
-
-
-post : Decoder value -> String -> Http.Body -> Task Http.Error value
-post _ _ _ =
-    Debug.crash "..."
-
-
-
+--
+-- post : Decoder value -> String -> Http.Body -> Task Http.Error value
+-- post _ _ _ =
+--     Debug.crash "..."
 {-
 
    It takes a decoder for the result, just like get, a String for the URL, and Body, which is new.
@@ -358,22 +389,31 @@ encodeHighScore { name, points, favoriteWeapon, time } =
         , ( "time", Encode.float time )
         ]
 
+
 parseWeapon : String -> Weapon
 parseWeapon weapon =
-  case weapon of
-    "Rusty Spoon" -> RustySpoon
-    "Moldering Pillow" -> MolderingPillow
-    "Moist Tissue" -> MoistTissue
-    _ -> RustySpoon
+    case weapon of
+        "Rusty Spoon" ->
+            RustySpoon
+
+        "Moldering Pillow" ->
+            MolderingPillow
+
+        "Moist Tissue" ->
+            MoistTissue
+
+        _ ->
+            RustySpoon
 
 
 highScore : Decoder HighScore
 highScore =
-  succeed HighScore
-      |: ("name" := string)
-      |: ("points" := int)
-      |: ("favorite_weapon" := Json.Decode.map parseWeapon string)
-      |: ("time" := float)
+    succeed HighScore
+        |: ("name" := string)
+        |: ("points" := int)
+        |: ("favorite_weapon" := Json.Decode.map parseWeapon string)
+        |: ("time" := float)
+
 
 
 {-
@@ -390,13 +430,67 @@ postHighScore url aHighScore =
     Http.post highScore url (aHighScore |> encodeHighScore |> Encode.encode 2 |> Http.string)
 
 
+post : Decoder value -> String -> Http.Body -> Task Http.Error value
+post decoder url body =
+    Http.post decoder url body
+
+
+postLukeUrl =
+    "http://httpbin.org/post"
+
+
+doPostLuke : Model -> Cmd Msg
+doPostLuke model =
+    case model.luke of
+        Just luke ->
+            Task.perform (always RequestError) ParseLukeToView <|
+                (post response
+                    postLukeUrl
+                    (luke
+                        |> encodePerson
+                        |> Encode.encode 2
+                        |> Http.string
+                    )
+                )
+
+        _ ->
+            Cmd.none
+
+
+
+-- response : Decoder Data
+
+
+response : Decoder Person
+response =
+    -- Json.Decode.object2 Data
+    ("json" := person)
+
+
+
+-- ("data" := string)
+-- type alias Data = { person :Person, data: String}
+
+
+encodePerson : Person -> Encode.Value
+encodePerson person =
+    Encode.object
+        [ ( "name", Encode.string person.name )
+        , ( "height", Encode.string person.height )
+        , ( "mass", Encode.string person.mass )
+        , ( "hair_color", Encode.string person.hairColor )
+        , ( "skin_color", Encode.string person.skinColor )
+        , ( "eye_color", Encode.string person.eyeColor )
+        , ( "birth_year", Encode.string person.birthYear )
+        , ( "gender", Encode.string (toString person.gender) )
+        ]
+
+
 
 -- EXERCISE: add a button to the Elm Architecture app that posts Luke Skywalker you fetched from the star wars api to http://httpbin.org/
-
-
 {-
 
-* Show http://noredink.github.io/json-to-elm/ for auto-generating encoders and decoders
-* Show posting JSON content-types with Http.send (WHICH IS A GIANT MESS)
-* Show https://github.com/lukewestby/elm-http-builder as an alternative to Http.send
+   * Show http://noredink.github.io/json-to-elm/ for auto-generating encoders and decoders
+   * Show posting JSON content-types with Http.send (WHICH IS A GIANT MESS)
+   * Show https://github.com/lukewestby/elm-http-builder as an alternative to Http.send
 -}

@@ -125,8 +125,17 @@ type alias GameResult =
     }
 
 
-tronsPlayerState : PlayerStats -> PlayerStats
-tronsPlayerState playerStats =
+tronsInitStats : PlayerStats
+tronsInitStats =
+    { player = "Tron"
+    , kills = 0
+    , deaths = 0
+    , gold = 0
+    }
+
+
+getTronsFinalStats : PlayerStats -> PlayerStats
+getTronsFinalStats playerStats =
     gotKill playerStats
         |> collectedGold 200
         |> died
@@ -134,27 +143,31 @@ tronsPlayerState playerStats =
         |> gotKill
         |> collectedGold 200
         |> died
-        |> collectedGold 200
-
-
-gameResult : PlayerStats -> GameResult
-gameResult playerStats =
-    { score = calculateScore playerStats, isWon = (playerStats.gold > 1000) }
+        |> collectedGold 800
 
 
 result : PlayerStats -> GameResult
 result stats =
-    Debug.crash "TODO"
+    let
+        isWon =
+            stats.gold > 1000
+    in
+        { score =
+            calculateScore stats
+                + if isWon then
+                    1000
+                  else
+                    0
+        , isWon = isWon
+        }
 
 
+main : Html a
 main =
-    text
-        (toString
-            (tronsPlayerState
-                { player = ""
-                , kills = 0
-                , deaths = 0
-                , gold = 0
-                }
-            )
-        )
+    -- text (toString (result (getTronsFinalStats tronsInitStats)))
+    -- (text << toString << result << getTronsFinalStats) tronsInitStats
+    -- (getTronsFinalStats >> result >> toString >> text) tronsInitStats
+    getTronsFinalStats tronsInitStats
+        |> result
+        |> toString
+        |> text

@@ -6,6 +6,7 @@ import Html.App exposing (program)
 import Html.Events exposing (onClick)
 import Effects.Random as ER
 import Effects.Http as EH
+import Effects.Subscriptions as ES
 
 
 {-
@@ -63,12 +64,14 @@ main =
 type CurrentApp
     = RandomApp
     | HttpApp
+    | SubscriptionApp
 
 
 type alias Model =
     { activeApp : CurrentApp
     , random : ER.Model
     , http : EH.Model
+    , subscription : ES.Model
     }
 
 
@@ -80,16 +83,21 @@ init =
 
         ( httpModel, httpCmd ) =
             EH.init
+
+        ( subscriptionModel, subscriptionCmd ) =
+            ES.init
     in
         ( { activeApp = RandomApp
           , random = randomModel
           , http = httpModel
+          , subscription = subscriptionModel
           }
         , Cmd.batch
             [ -- our own commands go here, but we have none so we just use Cmd.none
               Cmd.none
             , Cmd.map RandomMsg randomCmd
             , Cmd.map HttpMsg httpCmd
+            , Cmd.map SubscriptionMsg subscriptionCmd
             ]
         )
 
@@ -98,25 +106,34 @@ type Msg
     = ChangeCurrentApp CurrentApp
     | RandomMsg ER.Msg
     | HttpMsg EH.Msg
+    | SubscriptionMsg ES.Msg
 
 
 view model =
     div []
         [ h1 [] [ text "App Switcher" ]
         , ul []
-            [ li [] [ button 
-            [ 
-              onClick (ChangeCurrentApp RandomApp)
-              , disabled (model.activeApp == RandomApp)
-              ]
-            [ text "Random Numbers" ] 
-            ]
-            , li [] [ button 
-            [ 
-              onClick (ChangeCurrentApp HttpApp)
-              , disabled (model.activeApp == HttpApp)
-              ]
-                [ text "Http Requests" ] ]
+            [ li []
+                [ button
+                    [ onClick (ChangeCurrentApp RandomApp)
+                    , disabled (model.activeApp == RandomApp)
+                    ]
+                    [ text "Random Numbers" ]
+                ]
+            , li []
+                [ button
+                    [ onClick (ChangeCurrentApp HttpApp)
+                    , disabled (model.activeApp == HttpApp)
+                    ]
+                    [ text "Http Requests" ]
+                ]
+            , li []
+                [ button
+                    [ onClick (ChangeCurrentApp SubscriptionApp)
+                    , disabled (model.activeApp == SubscriptionApp)
+                    ]
+                    [ text "Subscriptions" ]
+                ]
             ]
         , renderChild model
         ]
@@ -129,6 +146,9 @@ renderChild model =
 
         HttpApp ->
             Html.App.map HttpMsg (EH.view model.http)
+
+        SubscriptionApp ->
+            Html.App.map SubscriptionMsg (ES.view model.subscription)
 
 
 update msg model =
@@ -150,6 +170,13 @@ update msg model =
             in
                 ( { model | http = http }, Cmd.map HttpMsg httpCmd )
 
+        SubscriptionMsg subscriptionMessage ->
+            let
+                ( subscription, subscriptionCmd ) =
+                    ES.update subscriptionMessage model.subscription
+            in
+                ( { model | subscription = subscription }, Cmd.map SubscriptionMsg subscriptionCmd )
+
 
 subscriptions model =
     Sub.batch
@@ -161,13 +188,14 @@ subscriptions model =
 --}
 
 
+
 {-
 
-   WHEW. That sure is a lot of work, but it looks like our app appears. Notice a few things here.
+      WHEW. That sure is a lot of work, but it looks like our app appears. Notice a few things here.
 
-   * Our elm architecture modules are SUPER reusable. We don't have to know very much at all about what our children are doing. We didn't have to change ANYTHING in our child components to use them in a parent component.
-   * Wow there is a LOT of boilerplate here. Look how much code is just forwarding stuff on to the correct children.
+      * Our elm architecture modules are SUPER reusable. We don't have to know very much at all about what our children are doing. We didn't have to change ANYTHING in our child components to use them in a parent component.
+      * Wow there is a LOT of boilerplate here. Look how much code is just forwarding stuff on to the correct children.
 
--- EXERCISE: Add a third button to allow them to switch to the subscription app.
+   -- EXERCISE: Add a third button to allow them to switch to the subscription app.
 
 -}

@@ -23,31 +23,59 @@ import Reuse.Examples.Button as Button
 
 
 type alias Model =
-    { wantsFood : Bool
-    , wantsDrink : Bool
+    { fries : Bool
+    , salad : Bool
+    , soup : Bool
     }
+
+
+
+-- { wantsFood : Bool
+-- , wantsDrink : Bool
+-- }
 
 
 init : Model
 init =
-    { wantsFood = True
-    , wantsDrink = False
-    }
+    { fries = True, salad = False, soup = False }
+
+
+
+-- { wantsFood = True
+-- , wantsDrink = False
+-- }
 
 
 type Msg
-    = ToggleFood
-    | ToggleDrink
+    = SelectFries
+    | SelectSalad
+    | SelectSoup
+
+
+
+-- = ToggleFood
+-- | ToggleDrink
 
 
 update : Msg -> Model -> Model
 update msg model =
     case msg of
-        ToggleFood ->
-            { model | wantsFood = not model.wantsFood }
+        SelectFries ->
+            { model | fries = True, salad = False, soup = False }
 
-        ToggleDrink ->
-            { model | wantsDrink = not model.wantsDrink }
+        SelectSalad ->
+            { model | fries = False, salad = True, soup = False }
+
+        SelectSoup ->
+            { model | fries = False, salad = False, soup = True }
+
+
+
+-- ToggleFood ->
+--     { model | wantsFood = not model.wantsFood }
+--
+-- ToggleDrink ->
+--     { model | wantsDrink = not model.wantsDrink }
 
 
 order : Model -> Html Msg

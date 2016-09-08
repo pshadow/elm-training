@@ -1,6 +1,7 @@
 module Modeling.Consistent exposing (..)
 
-import Html exposing (text, Html)
+import Html exposing (..)
+import Html.Attributes exposing (..)
 
 
 {-
@@ -47,6 +48,7 @@ displayShape shape =
             case shape.radius of
                 Just r ->
                     text "Now we can display a circle"
+
                 Nothing ->
                     text "This is an invalid Shape... "
 
@@ -91,7 +93,7 @@ type alias PolygonInfo =
 {-
    EXERCISE: Tweet Content
 
-   Tweets sometimes contain media: a video, link, or image. A video should be rendered in a <video> tag, an image in an <img> tag, and a link should display an <img>, and a title
+   Tweets sometimes contain media: a video, link, or image. A video should be rendered in a <video> tag, an image in an <img> tag, and a link should display an <a>, and a title
 
    Write a type that represents TweetContent
 
@@ -99,13 +101,35 @@ type alias PolygonInfo =
 -}
 
 
-type alias TweetContent =
+type alias TweetContent' =
     {}
+
+
+type TweetContent
+    = Video String
+    | Image String
+    | Link LinkContent
+    | PlainText String
+
+
+type alias LinkContent =
+    { title : String, href : String }
 
 
 tweetContentView : TweetContent -> Html msg
 tweetContentView content =
-    Debug.crash "TODO"
+    case content of
+        Video str ->
+            video [] [ text str ]
+
+        Image str ->
+            img [] [ text str ]
+
+        Link { title, href } ->
+            a [ Html.Attributes.href href ] [ text title ]
+
+        PlainText str ->
+            span [] [ text str ]
 
 
 

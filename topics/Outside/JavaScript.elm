@@ -10,73 +10,82 @@ import DetailedRendering.InlineStyles exposing (center)
 
 
 {-
-  The goal of Elm is to eliminate the need to write JS. Sometimes this is unavoidable. When you really need to interop with JS code, Elm makes this safe with ports.
+   The goal of Elm is to eliminate the need to write JS. Sometimes this is unavoidable. When you really need to interop with JS code, Elm makes this safe with ports.
 
-  In Elm you treat JS as a third-party service.
+   In Elm you treat JS as a third-party service.
 
-  * Mention the `port` keyword at the beginning of the module declaration.
-  * Show creating the Elm app manually in JS in `index.html`, running it with elm-live.
-  * Show subscribing in JS side with app.ports.name.subscribe
-  * Show harlem shake app
+   * Mention the `port` keyword at the beginning of the module declaration.
+   * Show creating the Elm app manually in JS in `index.html`, running it with elm-live.
+   * Show subscribing in JS side with app.ports.name.subscribe
+   * Show harlem shake app
 
-  Run this with `elm-live --port=8001 --open JavaScript.elm --output=elm.js`
+   Run this with `elm-live --port=8001 --open JavaScript.elm --output=elm.js`
 
-  SEE https://www.youtube.com/watch?v=8f7wj_RcqYk for background.
+   SEE https://www.youtube.com/watch?v=8f7wj_RcqYk for background.
 -}
-{--}
+{-
 
 
-init =
-    ( { playing = False
-      }
-    , Cmd.none
-    )
+   init =
+       ( { playing = False
+         }
+       , Cmd.none
+       )
 
 
-type Msg
-    = Shake
+   type Msg
+       = Shake
+       | ChangeColor
 
 
-view model =
-    div [ center ]
-        [ h1 [] [ text "Let Us Shake" ]
-        , renderList
-        , renderList
-        , renderList
-        , renderList
-        , div [] [ button [ onClick Shake ] [ text "Shake" ] ]
-        ]
+   view model =
+       div [ center ]
+           [ h1 [] [ text "Let Us Shake" ]
+           , renderList
+           , renderList
+           , renderList
+           , renderList
+           , div [] [ button [ onClick Shake ] [ text "Shake" ] ]
+           , div [] [ button [ onClick ChangeColor ] [ text "Change Color" ] ]
+           ]
 
 
-renderList =
-    ul []
-        [ li [] [ text "One" ]
-        , li [] [ text "Two" ]
-        , li [] [ text "Three" ]
-        , li [] [ text "Four" ]
-        ]
+   renderList =
+       ul []
+           [ li [] [ text "One" ]
+           , li [] [ text "Two" ]
+           , li [] [ text "Three" ]
+           , li [] [ text "Four" ]
+           ]
 
 
-update msg model =
-    case msg of
-        Shake ->
-            ( { model | playing = True }, shake Nothing )
+   update msg model =
+       case msg of
+           Shake ->
+               ( { model | playing = True }, shake Nothing )
+
+           ChangeColor ->
+               ( model, changeColor Nothing )
 
 
 
--- You have to send *some* value on ports just to make the compiler happy.
+   -- You have to send *some* value on ports just to make the compiler happy.
 
 
-port shake : Maybe String -> Cmd msg
+   port shake : Maybe String -> Cmd msg
 
 
-subscriptions _ =
-    Sub.none
+   port changeColor : Maybe String -> Cmd msg
 
 
-main =
-    program { init = init, view = view, update = update, subscriptions = subscriptions }
---}
+   subscriptions _ =
+       Sub.none
+
+
+   main =
+       program { init = init, view = view, update = update, subscriptions = subscriptions }
+   -
+-}
 -- EXERCISE: Add another button that sends something through a port that changes the background color of the page in JavaScript.
 {-
 
@@ -87,11 +96,11 @@ main =
    * Error handling in ports:
 
 -}
-{--
 
 
 init =
     ( { playing = False
+      , beatsDropped = 0
       }
     , Cmd.none
     )
@@ -100,6 +109,7 @@ init =
 type Msg
     = Shake
     | StopShaking
+    | BeatsDropped
 
 
 view model =
@@ -123,6 +133,7 @@ view model =
                 ]
                 [ text "Shake" ]
             ]
+        , div [] [ text ("BeatsDropped: " ++ (toString model.beatsDropped)) ]
         ]
 
 
@@ -143,20 +154,34 @@ update msg model =
         StopShaking ->
             ( { model | playing = False }, Cmd.none )
 
+        BeatsDropped ->
+            ( { model | beatsDropped = model.beatsDropped + 1 }, Cmd.none )
 
 
 port shake : Maybe String -> Cmd msg
 
+
+
 -- Here we declare an inbound port. Explain the difference between the inbound port and outbound
+
+
 port stopShaking : (String -> msg) -> Sub msg
 
 
+port beatsDropped : (Int -> msg) -> Sub msg
+
+
 subscriptions _ =
-    stopShaking (always StopShaking)
+    Sub.batch
+        [ stopShaking (always StopShaking)
+        , beatsDropped (always BeatsDropped)
+        ]
 
 
 main =
     program { init = init, view = view, update = update, subscriptions = subscriptions }
 --}
+
+
 
 -- EXERCISE: Create a new port in Elm. In JavaScript, pass a second callback in to `harlemShake` that will send some data to that new port. In Elm, when you recieve that data, increment a `beatsDropped` counter on the model and render that in your view.

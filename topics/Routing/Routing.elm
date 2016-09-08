@@ -57,23 +57,29 @@ type Msg
 init : Route -> ( Model, Cmd Msg )
 init route =
     let
-        routeModel =
+        ( routeModel, cmd ) =
             case route of
                 Post id ->
-                    PostModel (Post.init id)
+                    let
+                        ( postModel, postCmd ) =
+                            Post.init id
+                    in
+                        ( PostModel postModel, Cmd.map PostMsg postCmd )
 
                 Counter ->
-                    CounterModel (Counter.init)
+                    ( CounterModel (Counter.init), Cmd.none )
 
                 NotFound ->
-                    StaticModel route
+                    ( StaticModel route, Cmd.none )
 
                 Home ->
-                    StaticModel Home
+                    ( StaticModel Home, Cmd.none )
     in
         ( { routeModel = routeModel, route = route }
-        , Cmd.none
+        , cmd
         )
+
+
 
 {-
 
@@ -129,7 +135,7 @@ urlUpdate route model =
 
 view : Model -> Html Msg
 view model =
-    div [ style [("margin", "10px")] ]
+    div [ style [ ( "margin", "10px" ) ] ]
         [ h1 [] [ text "Routing Example" ]
         , div []
             [ routeView model.routeModel ]
@@ -173,6 +179,7 @@ main =
         , view = view
         , subscriptions = subscriptions
         }
+
 
 
 {-

@@ -5,6 +5,8 @@ import Html.Attributes exposing (href, style)
 import Html.App as App
 import Html.Events exposing (onClick)
 import Routing.Routes exposing (url, Route(..))
+import Http
+import Task
 
 
 -- MODEL ---------------------------
@@ -13,12 +15,15 @@ import Routing.Routes exposing (url, Route(..))
 type alias Model =
     { postId : Int
     , liked : Bool
+    , time : String
     }
 
 
-init : Int -> Model
+init : Int -> ( Model, Cmd Msg )
 init id =
-    { postId = id, liked = False }
+    ( { postId = id, liked = False, time = "" }
+    , getTime
+    )
 
 
 
@@ -27,11 +32,27 @@ init id =
 
 type Msg
     = Like
+    | UpdateTime String
+    | RequestError
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
-    ( model, Cmd.none )
+    case msg of
+        Like ->
+            ( model, Cmd.none )
+
+        UpdateTime str ->
+            ( { model | time = str }, Cmd.none )
+
+        RequestError ->
+            ( model, Cmd.none )
+
+
+getTime : Cmd Msg
+getTime =
+    Task.perform (always RequestError) UpdateTime <|
+        Http.getString "http://www.timeapi.org/utc/now"
 
 
 
@@ -42,6 +63,7 @@ view : Model -> Html Msg
 view model =
     div []
         [ div [] [ text "Post: ", text (toString model.postId) ]
+        , div [] [ text "Time: ", text model.time ]
         , div []
             [ a [ href (url (Post (model.postId - 1))) ]
                 [ text "Previous" ]
