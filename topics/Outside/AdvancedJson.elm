@@ -9,6 +9,7 @@ import Html.Events exposing (onClick)
 import Http
 import Task exposing (Task)
 import DetailedRendering.InlineStyles exposing (center)
+import Json.Decode.Pipeline as Pipeline
 
 
 {-
@@ -47,25 +48,41 @@ type alias Person =
     , eyeColor : String
     , birthYear : String
     , gender : Gender
+    , robotHands : Int
     }
 
 
 
 -- It's conventional to name decoders after the thing they decode, but camelCase instead of PascalCase.
+{-
+   person : Decoder Person
+   person =
+       --  live code
+       succeed Person
+           |: ("name" := string)
+           |: ("height" := string)
+           |: ("mass" := string)
+           |: ("hair_color" := string)
+           |: ("skin_color" := string)
+           |: ("eye_color" := string)
+           |: ("birth_year" := string)
+           |: ("gender" := gender)
+           |: (oneOf ([ ("robot_hands" := int), succeed 0 ]))
+-}
 
 
 person : Decoder Person
 person =
-    --  live code
-    succeed Person
-        |: ("name" := string)
-        |: ("height" := string)
-        |: ("mass" := string)
-        |: ("hair_color" := string)
-        |: ("skin_color" := string)
-        |: ("eye_color" := string)
-        |: ("birth_year" := string)
-        |: ("gender" := (Json.Decode.map parseGender string))
+    Pipeline.decode Person
+        |> Pipeline.required "name" string
+        |> Pipeline.required "height" string
+        |> Pipeline.required "mass" string
+        |> Pipeline.required "hair_color" string
+        |> Pipeline.required "skin_color" string
+        |> Pipeline.required "eye_color" string
+        |> Pipeline.required "birth_year" string
+        |> Pipeline.required "gender" gender
+        |> Pipeline.optional "robot_hands" int 0
 
 
 decodedPerson =
@@ -101,6 +118,7 @@ person2 =
         |: (oneOf ([ ("skin_color" := string), succeed "no skin color" ]))
 
 
+decodedLuke : Result String Person2
 decodedLuke =
     decodeString person2 luke
 
@@ -113,6 +131,7 @@ decodedNothing =
 -- EXERCISE: modify the Person2 type alias and person2 decoder to handle Darth Vader, who has no skin color either!
 
 
+vader : String
 vader =
     """
   {
@@ -121,6 +140,7 @@ vader =
 """
 
 
+decodedVader : Result String Person2
 decodedVader =
     decodeString person2 vader
 
@@ -183,7 +203,7 @@ type Msg
     | GotLuke Person
     | RequestError
     | PostLuke
-    | ParseLukeToView Person
+    | GotResponse Person
 
 
 view model =
@@ -213,9 +233,9 @@ update msg model =
             ( model, Cmd.none )
 
         PostLuke ->
-            ( model, doPostLuke model )
+            ( model, doPostLuke model.luke )
 
-        ParseLukeToView person ->
+        GotResponse person ->
             ( { model | response = Just person }
             , Cmd.none
             )
@@ -228,9 +248,7 @@ lukeUrl =
 
 fetchLuke : Cmd Msg
 fetchLuke =
-    Task.perform (always RequestError) GotLuke <|
-        Http.get person lukeUrl
---}
+    Task.perform (always RequestError) GotLuke <| Http.get person lukeUrl
 
 
 
@@ -304,6 +322,11 @@ type Gender
     = Male
     | Female
     | Other
+
+
+gender : Decoder Gender
+gender =
+    Json.Decode.map parseGender string
 
 
 parseGender : String -> Gender
@@ -439,19 +462,18 @@ postLukeUrl =
     "http://httpbin.org/post"
 
 
-doPostLuke : Model -> Cmd Msg
-doPostLuke model =
-    case model.luke of
+doPostLuke : Maybe Person -> Cmd Msg
+doPostLuke maybeLuke =
+    case maybeLuke of
         Just luke ->
-            Task.perform (always RequestError) ParseLukeToView <|
-                (post response
+            Task.perform (always RequestError) GotResponse <|
+                Http.post response
                     postLukeUrl
                     (luke
                         |> encodePerson
-                        |> Encode.encode 2
+                        |> Encode.encode 0
                         |> Http.string
                     )
-                )
 
         _ ->
             Cmd.none
@@ -483,6 +505,7 @@ encodePerson person =
         , ( "eye_color", Encode.string person.eyeColor )
         , ( "birth_year", Encode.string person.birthYear )
         , ( "gender", Encode.string (toString person.gender) )
+        , ( "robot_hands", Encode.int person.robotHands )
         ]
 
 

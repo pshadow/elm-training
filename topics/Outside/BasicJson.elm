@@ -1,6 +1,5 @@
 module Outside.BasicJson exposing (..)
 
-import Json.Decode.Extra exposing ((|:))
 import Json.Decode as Decode exposing (decodeString, list, int, float, string, bool, null, (:=), object2, object4, object5, object8, Decoder)
 import Html exposing (text)
 
@@ -220,18 +219,19 @@ type alias StarWarsCharacter =
 
 starWarsCharacterDecoder : Decoder StarWarsCharacter
 starWarsCharacterDecoder =
-    succeed StarWarsCharacter
-        |: ("name" := string)
-        |: ("height" := string)
-        |: ("mass" := string)
-        |: ("hair_color" := string)
-        |: ("skin_color" := string)
-        |: ("eye_color" := string)
-        |: ("birth_year" := string)
-        |: ("gender" := string)
+    object8 StarWarsCharacter
+        ("name" := string)
+        ("height" := string)
+        ("mass" := string)
+        ("hair_color" := string)
+        ("skin_color" := string)
+        ("eye_color" := string)
+        ("birth_year" := string)
+        ("gender" := string)
 
 
-decodedstarWarsCharacter =
+decodedStartWarsCharacter : Result String StarWarsCharacter
+decodedStartWarsCharacter =
     decodeString starWarsCharacterDecoder luke
 
 
