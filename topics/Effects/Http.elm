@@ -1,8 +1,8 @@
 module Effects.Http exposing (..)
 
-import Html exposing (div, h1, h2, text, button, Html, input)
+import Html exposing (div, h1, h2, text, button, Html, input, form)
 import Html.App exposing (program)
-import Html.Events exposing (onClick, onInput)
+import Html.Events exposing (onClick, onInput, onSubmit)
 import Http
 import Task exposing (Task)
 import DetailedRendering.InlineStyles exposing (center)
